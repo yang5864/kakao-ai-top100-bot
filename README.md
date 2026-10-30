@@ -61,7 +61,7 @@ vercel link --yes
 ```
 
 ```bash
-vercel integration add upstash --yes --no-claim
+npx vercel@latest integration add upstash/upstash-kv --non-interactive --no-claim --no-env-pull --name kakao-bot-redis
 ```
 
 아래 값을 프로덕션 환경변수로 등록합니다. 명령을 실행하면 값을 입력하라고 나옵니다.
@@ -87,15 +87,17 @@ vercel deploy --prod
 
 웹훅 URL을 등록한 앱은 게이트웨이(WebSocket)에 연결할 수 없습니다.
 
-## 공식 가이드에서 확인할 항목
+## 공식 가이드 확인 결과
 
-아래는 공개 래퍼 라이브러리 [KakaoTalk-Bot-Wrapper](https://github.com/punch5545/KakaoTalk-Bot-Wrapper)를 근거로
-구현했습니다. 공식 문서는 참가 계정으로 로그인해야 볼 수 있으니, 로그인 후 맞는지 확인하세요.
+공식 문서는 참가 계정으로 로그인해야 볼 수 있습니다. 아래 항목은 문서와 실제 호출로 확인했습니다.
 
-- [ ] 인증 헤더가 `Authorization: KakaoAK <봇 토큰>`인지 (`npm run verify`로 확인 가능)
-- [ ] 웹훅 본문이 `{ "op": 0, "t": "MESSAGE_CREATE", "d": { ... } }` 형식인지
-- [ ] 콜백 주소가 `POST https://kapi.kakao.com/v1/bot/callback`이고 헤더가 `X-Bot-Callback-Token`인지
-- [ ] 웹훅 등록 때 URL 검증 요청이 따로 오는지 (`GET`이나 다른 형식이면 대응 필요)
+- [x] 인증 헤더가 `Authorization: KakaoAK <봇 토큰>`인지 (`npm run verify`로 확인 완료)
+- [x] 웹훅 본문이 `{ "op": 0, "t": "MESSAGE_CREATE", "d": { ... } }` 형식인지 (공식 문서 확인)
+- [x] 콜백 주소가 `POST https://kapi.kakao.com/v1/bot/callback`이고 헤더가 `X-Bot-Callback-Token`인지 (가짜 토큰으로 `-881` 응답 확인)
+- [x] 웹훅 등록 때 URL 검증 요청이 따로 오는지 (공식 문서에 별도 검증 요청 없음)
+
+봇은 카카오톡에서 이름이나 검색용 ID로 검색하거나, 채팅방 메뉴(☰) > [챗봇 beta]에서 초대해 대화합니다.
+나와의채팅과 비밀채팅은 지원하지 않습니다.
 
 ## 대회 일정 체크리스트
 
