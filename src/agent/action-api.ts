@@ -15,6 +15,7 @@ export async function callActionApi({ method, path, body }: ActionRequest, testC
   if (!path.startsWith('/api/') || path.startsWith('/api/action-data')) {
     return '허용되지 않은 경로입니다.';
   }
+  if (/[{}]/.test(path)) return '경로에 실제 값을 넣지 않았습니다. 조회한 값으로 바꿔 다시 호출하세요.';
   if (/[=/]$/.test(path)) return '값이 비어 있어 호출하지 않았습니다. 고객에게 먼저 확인하세요.';
 
   const baseUrl = process.env.ACTION_API_BASE_URL || 'https://gyodong-mall-action.aitop100.org';
@@ -41,5 +42,8 @@ export async function callActionApi({ method, path, body }: ActionRequest, testC
 
   const text = (await response.text()).slice(0, MAX_RESULT_CHARS);
   console.log(`[action] ${method} ${path} ${response.status}`);
+  if (method === 'POST' && response.status === 400 && !text) {
+    return 'HTTP 400 (본문 없음) 접수되지 않았습니다. 본문 필드가 맞지 않습니다. API 목록의 필드만 넣어 다시 호출하세요.';
+  }
   return `HTTP ${response.status}${text ? ` ${text}` : ' (본문 없음)'}`;
 }
