@@ -6,6 +6,19 @@ import { textResponse } from './kakao/skill.js';
 import { getStore } from './store.js';
 
 const RESET_COMMAND = '/reset';
+// 평가는 대화로 TC ID를 전달하므로 메시지에서 찾아 대화 단위로 유지합니다.
+const TEST_CASE_ID = /\b[A-Z]-\d{2}(?:-[a-z])?\b/;
+
+// TC가 바뀌면 다른 케이스이므로 이전 대화를 이어가지 않습니다.
+async function resolveTestCase(chatKey: string, content: string) {
+  const store = getStore();
+  const current = await store.testCase(chatKey);
+  const found = content.match(TEST_CASE_ID)?.[0];
+  if (!found || found === current) return current ?? undefined;
+
+  await Promise.all([store.clear(chatKey), store.setTestCase(chatKey, found)]);
+  return found;
+}
 
 async function createReply(chatKey: string, content: string) {
   const store = getStore();
@@ -16,7 +29,8 @@ async function createReply(chatKey: string, content: string) {
       return '대화 기록을 초기화했습니다.';
     }
 
-    const reply = await runAgent(await store.history(chatKey), content);
+    const testCaseId = await resolveTestCase(chatKey, content);
+    const reply = await runAgent(await store.history(chatKey), content, { testCaseId });
     await store.append(chatKey, [
       { role: 'user', content },
       { role: 'assistant', content: reply },

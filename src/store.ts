@@ -11,6 +11,8 @@ interface Store {
   history(key: string): Promise<ChatMessage[]>;
   append(key: string, messages: ChatMessage[]): Promise<void>;
   clear(key: string): Promise<void>;
+  testCase(key: string): Promise<string | null>;
+  setTestCase(key: string, id: string): Promise<void>;
 }
 
 const MAX_MESSAGES = 20;
@@ -36,6 +38,12 @@ function redisStore(redis: Redis): Store {
     async clear(key) {
       await redis.del(`chat:${key}`);
     },
+    testCase(key) {
+      return redis.get<string>(`tc:${key}`);
+    },
+    async setTestCase(key, id) {
+      await redis.set(`tc:${key}`, id, { ex: HISTORY_TTL });
+    },
   };
 }
 
@@ -43,6 +51,7 @@ function redisStore(redis: Redis): Store {
 function memoryStore(): Store {
   const seen = new Set<string>();
   const chats = new Map<string, ChatMessage[]>();
+  const testCases = new Map<string, string>();
   return {
     async claim(id) {
       if (seen.has(id)) return false;
@@ -57,6 +66,12 @@ function memoryStore(): Store {
     },
     async clear(key) {
       chats.delete(key);
+    },
+    async testCase(key) {
+      return testCases.get(key) ?? null;
+    },
+    async setTestCase(key, id) {
+      testCases.set(key, id);
     },
   };
 }

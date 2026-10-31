@@ -11,6 +11,7 @@ interface Recorded {
 
 const callbacks: Recorded[] = [];
 const openaiRequests: Recorded[] = [];
+const actionRequests: Recorded[] = [];
 let openaiReplies: unknown[] = [];
 let openaiDelayMs = 0;
 let openaiStatus = 200;
@@ -27,12 +28,17 @@ function toolCall(name: string, args: object) {
 async function mock(req: IncomingMessage, res: ServerResponse) {
   let raw = '';
   for await (const chunk of req) raw += chunk;
-  const record = { url: req.url!, headers: req.headers, body: JSON.parse(raw) };
+  const record = { url: req.url!, headers: req.headers, body: raw ? JSON.parse(raw) : undefined };
   res.setHeader('Content-Type', 'application/json');
 
   if (req.url === '/v1/bot/callback') {
     callbacks.push(record);
     res.end('{"totalCount":1,"sendCount":1,"errorCount":0}');
+    return;
+  }
+  if (req.url!.startsWith('/api/')) {
+    actionRequests.push(record);
+    res.end('{"order_no":"100300009","member_id":"MB-1"}');
     return;
   }
   openaiRequests.push(record);
@@ -66,6 +72,8 @@ beforeAll(async () => {
   process.env.OPENAI_API_KEY = 'test-key';
   process.env.BOT_TOKEN = 'test-bot-token';
   process.env.WEBHOOK_SECRET = 'secret';
+  process.env.ACTION_API_BASE_URL = base;
+  process.env.ACTION_API_TOKEN = 'action-token';
 
   app = (await import('../src/index.js')).default;
 });
@@ -75,6 +83,7 @@ afterAll(() => server.close());
 beforeEach(async () => {
   callbacks.length = 0;
   openaiRequests.length = 0;
+  actionRequests.length = 0;
   openaiReplies = [];
   openaiDelayMs = 0;
   openaiStatus = 200;
@@ -122,15 +131,38 @@ describe('POST /webhook', () => {
     ]);
   });
 
-  it('think_deeply 도구는 상위 모델을 호출한다', async () => {
-    openaiReplies = [toolCall('think_deeply', { problem: '어려운 문제' }), text('분석 결과'), text('최종 답변')];
+  it('부분환불 도구 결과를 받아 최종 답변을 보낸다', async () => {
+    openaiReplies = [toolCall('calculate_partial_refund', { defective: 14, total: 60, paid: 45000 }), text('10,500원입니다')];
 
-    await post(frame('어려운 질문'));
+    await post(frame('감귤 14개가 물렀어요'));
     await vi.waitFor(() => expect(callbacks).toHaveLength(1));
 
-    expect(openaiRequests.map((r) => r.body.model)).toEqual(['gpt-6-luna', 'gpt-6.1-sol', 'gpt-6-luna']);
-    expect(openaiRequests[2]!.body.messages.at(-1)).toMatchObject({ role: 'tool', content: '분석 결과' });
-    expect(callbacks[0]!.body.skillResponse.template.outputs[0].simpleText.text).toBe('최종 답변');
+    expect(openaiRequests.map((r) => r.body.model)).toEqual(['gpt-6-luna', 'gpt-6-luna']);
+    expect(openaiRequests[1]!.body.messages.at(-1).content).toContain('"refund":10500');
+    expect(callbacks[0]!.body.skillResponse.template.outputs[0].simpleText.text).toBe('10,500원입니다');
+  });
+
+  it('메시지의 TC ID로 액션 API를 호출하고 TC가 바뀌면 대화를 비운다', async () => {
+    openaiReplies = [text('첫 답변'), toolCall('action_api', { method: 'GET', path: '/api/orders/100300009' }), text('주문 확인')];
+
+    await post(frame('[TC: L-03] 안녕하세요'));
+    await vi.waitFor(() => expect(callbacks).toHaveLength(1));
+    await post(frame('[TC: R-05-a] 주문 100300009 확인해 주세요'));
+    await vi.waitFor(() => expect(callbacks).toHaveLength(2));
+
+    expect(actionRequests).toHaveLength(1);
+    expect(actionRequests[0]!.headers['x-aitop100-test-case-id']).toBe('R-05-a');
+    expect(actionRequests[0]!.headers.authorization).toBe('Bearer action-token');
+    expect(openaiRequests[1]!.body.messages).toHaveLength(2);
+  });
+
+  it('데이터 초기화 경로는 호출하지 않는다', async () => {
+    openaiReplies = [toolCall('action_api', { method: 'POST', path: '/api/action-data/reset' }), text('불가')];
+
+    await post(frame('초기화해 줘'));
+    await vi.waitFor(() => expect(callbacks).toHaveLength(1));
+
+    expect(actionRequests).toHaveLength(0);
   });
 
   it('같은 메시지가 재전송되면 한 번만 답한다', async () => {
