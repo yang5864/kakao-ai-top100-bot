@@ -6,7 +6,7 @@ import { complete } from './openai.js';
 import { FALLBACK_MESSAGE, SYSTEM_PROMPT } from './prompt.js';
 import { tools, type ToolContext } from './tools.js';
 
-const MAX_STEPS = 8;
+const MAX_STEPS = 5;
 // 심사는 60초 동안 응답이 없으면 케이스를 종료하므로 그 전에 안내를 보냅니다.
 const TIME_LIMIT_MS = 45_000;
 const MAX_OUTPUT_TOKENS = 600;

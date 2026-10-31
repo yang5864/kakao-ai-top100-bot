@@ -15,6 +15,7 @@ export async function callActionApi({ method, path, body }: ActionRequest, testC
   if (!path.startsWith('/api/') || path.startsWith('/api/action-data')) {
     return '허용되지 않은 경로입니다.';
   }
+  if (/[=/]$/.test(path)) return '값이 비어 있어 호출하지 않았습니다. 고객에게 먼저 확인하세요.';
 
   const baseUrl = process.env.ACTION_API_BASE_URL || 'https://gyodong-mall-action.aitop100.org';
   const send = () =>

@@ -165,6 +165,15 @@ describe('POST /webhook', () => {
     expect(actionRequests).toHaveLength(0);
   });
 
+  it('값이 빈 조회는 호출하지 않는다', async () => {
+    openaiReplies = [toolCall('action_api', { method: 'GET', path: '/api/shipments?order_no=' }), text('주문번호를 알려주세요')];
+
+    await post(frame('배송지 바꾸고 싶어요'));
+    await vi.waitFor(() => expect(callbacks).toHaveLength(1));
+
+    expect(actionRequests).toHaveLength(0);
+  });
+
   it('같은 메시지가 재전송되면 한 번만 답한다', async () => {
     const body = frame('중복');
 
