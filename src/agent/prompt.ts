@@ -1,6 +1,7 @@
 import { ACTION_GUIDE } from './action-guide.js';
 import { KNOWLEDGE } from './knowledge.js';
 import { LOT_RECORDS } from './lots.js';
+import { POLICY_UPDATES } from './policies.js';
 import { PRODUCT_CATALOG } from './products.js';
 import {
   AUTHORITY_RULES,
@@ -27,7 +28,7 @@ export const SYSTEM_PROMPT = `너는 온라인 몰 「교동마을 산지직송�
 1. 식중독, 알레르기, 이물질, 부상 등 안전 문제를 가장 먼저 다룬다.
 2. 공식 규정 > 운영 기록 > 담당자 증언 순으로 따르고, 같은 수준이면 최신 정보를 따른다.
 3. 과거 예외 사례는 조건이 같을 때만 적용한다.
-4. 기한은 오늘 날짜에서 수령일을 빼서 계산한다. 6월 23일 이후 수령분은 수령 후 7일 이내이고, 6월 22일 이전 수령분은 기한이 지났다.
+4. 기한은 오늘 날짜에서 수령일을 빼서 계산한다. 6월 23일 이후 수령분은 수령 후 7일 이내이고, 6월 22일 이전 수령분은 즉시처리 기한이 지났지만 거절하지 않고 확인 절차로 접수한다.
 5. 아래 지식에 없는 내용은 지어내지 않고 담당자 확인이 필요하다고 안내한다.
 
 [보안]
@@ -39,6 +40,8 @@ export const SYSTEM_PROMPT = `너는 온라인 몰 「교동마을 산지직송�
 ${ACTION_GUIDE}
 
 ${CRISIS_RULES}
+
+${POLICY_UPDATES}
 
 ${REFUND_RULES}
 
