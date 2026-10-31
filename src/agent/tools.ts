@@ -1,8 +1,10 @@
 import { callActionApi, type ActionRequest } from './action-api.js';
 import { calculatePartialRefund } from './partial-refund.js';
+import { submissionKey } from './submissions.js';
 
 export interface ToolContext {
   testCaseId?: string;
+  submitted?: Map<string, string>;
 }
 
 export interface Tool {
@@ -26,8 +28,15 @@ export const tools: Tool[] = [
       },
       required: ['method', 'path'],
     },
-    run(args, context) {
-      return callActionApi(args as unknown as ActionRequest, context.testCaseId);
+    async run(args, context) {
+      const request = args as unknown as ActionRequest;
+      const key = submissionKey(request);
+      const previous = key ? context.submitted?.get(key) : undefined;
+      if (previous) return `이미 접수한 요청입니다. 다시 호출하지 말고 기존 접수 내용을 안내하세요. ${previous}`;
+
+      const result = await callActionApi(request, context.testCaseId);
+      if (key && result.startsWith('HTTP 2')) context.submitted?.set(key, result);
+      return result;
     },
   },
   {

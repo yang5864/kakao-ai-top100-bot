@@ -1,5 +1,6 @@
 import { FALLBACK_MESSAGE } from './agent/prompt.js';
 import { runAgent } from './agent/run.js';
+import { appendSubmissions, readSubmissions } from './agent/submissions.js';
 import { sendCallback } from './kakao/client.js';
 import type { MessageData } from './kakao/event.js';
 import { textResponse } from './kakao/skill.js';
@@ -30,10 +31,13 @@ async function createReply(chatKey: string, content: string) {
     }
 
     const testCaseId = await resolveTestCase(chatKey, content);
-    const reply = await runAgent(await store.history(chatKey), content, { testCaseId });
+    const history = await store.history(chatKey);
+    const submitted = readSubmissions(history);
+    const before = new Set(submitted.keys());
+    const reply = await runAgent(history, content, { testCaseId, submitted });
     await store.append(chatKey, [
       { role: 'user', content },
-      { role: 'assistant', content: reply },
+      { role: 'assistant', content: appendSubmissions(reply, before, submitted) },
     ]);
     return reply;
   } catch (error) {
