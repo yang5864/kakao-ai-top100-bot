@@ -124,7 +124,7 @@ describe('POST /webhook', () => {
     const { model, messages } = openaiRequests[1]!.body;
     expect(model).toBe('gpt-6-luna');
     expect(openaiRequests[1]!.body.reasoning_effort).toBe('none');
-    expect(messages.slice(1)).toEqual([
+    expect(messages.slice(1, -1)).toEqual([
       { role: 'user', content: '첫 질문' },
       { role: 'assistant', content: '첫 답변' },
       { role: 'user', content: '둘째 질문' },
@@ -153,7 +153,7 @@ describe('POST /webhook', () => {
     expect(actionRequests).toHaveLength(1);
     expect(actionRequests[0]!.headers['x-aitop100-test-case-id']).toBe('R-05-a');
     expect(actionRequests[0]!.headers.authorization).toBe('Bearer action-token');
-    expect(openaiRequests[1]!.body.messages).toHaveLength(2);
+    expect(openaiRequests[1]!.body.messages).toHaveLength(3);
   });
 
   it('데이터 초기화 경로는 호출하지 않는다', async () => {

@@ -3,7 +3,7 @@ import type { OpenAI } from 'openai';
 import { models } from '../config.js';
 import type { ChatMessage } from '../store.js';
 import { complete } from './openai.js';
-import { FALLBACK_MESSAGE, SYSTEM_PROMPT } from './prompt.js';
+import { FALLBACK_MESSAGE, FINAL_CHECK, SYSTEM_PROMPT } from './prompt.js';
 import { tools, type ToolContext } from './tools.js';
 
 const MAX_STEPS = 5;
@@ -27,6 +27,7 @@ export async function runAgent(history: ChatMessage[], userMessage: string, cont
     { role: 'system', content: SYSTEM_PROMPT },
     ...history,
     { role: 'user', content: userMessage },
+    { role: 'system', content: FINAL_CHECK },
   ];
 
   for (let step = 1; step <= MAX_STEPS; step++) {
