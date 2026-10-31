@@ -1,5 +1,6 @@
 import { models } from '../config.js';
 import { complete } from './openai.js';
+import { calculatePartialRefund } from './partial-refund.js';
 
 export interface Tool {
   name: string;
@@ -11,11 +12,21 @@ export interface Tool {
 // 에이전트 기능을 추가할 때는 이 배열에 도구를 넣으면 됩니다.
 export const tools: Tool[] = [
   {
-    name: 'get_current_time',
-    description: '현재 한국 시각을 확인합니다.',
-    parameters: { type: 'object', properties: {}, additionalProperties: false },
-    async run() {
-      return new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+    name: 'calculate_partial_refund',
+    description: '박스·세트 상품의 일부 개체 하자에 대한 하자 비율, 구간, 환불액을 계산합니다.',
+    parameters: {
+      type: 'object',
+      properties: {
+        defective: { type: 'number', description: '하자 개체 수' },
+        total: { type: 'number', description: '입수(구성 개수)' },
+        paid: { type: 'number', description: '해당 상품의 실결제액(원)' },
+      },
+      required: ['defective', 'total', 'paid'],
+      additionalProperties: false,
+    },
+    async run(args) {
+      const { defective, total, paid } = args as { defective: number; total: number; paid: number };
+      return JSON.stringify(calculatePartialRefund({ defective, total, paid }));
     },
   },
   {
