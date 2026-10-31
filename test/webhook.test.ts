@@ -159,7 +159,7 @@ describe('POST /webhook', () => {
     await post(frame('질문'));
     await vi.waitFor(() => expect(callbacks).toHaveLength(1));
 
-    expect(callbacks[0]!.body.skillResponse.template.outputs[0].simpleText.text).toContain('죄송합니다');
+    expect(callbacks[0]!.body.skillResponse.template.outputs[0].simpleText.text).toContain('담당자');
   });
 
   it('비밀값이 다르면 거부한다', async () => {

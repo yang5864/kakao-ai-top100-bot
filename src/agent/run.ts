@@ -7,8 +7,9 @@ import { FALLBACK_MESSAGE, SYSTEM_PROMPT } from './prompt.js';
 import { tools } from './tools.js';
 
 const MAX_STEPS = 5;
-// Vercel 함수 제한(300초) 안에 실패 안내까지 보낼 수 있도록 여유를 둡니다.
-const TIME_LIMIT_MS = 240_000;
+// 심사는 60초 동안 응답이 없으면 케이스를 종료하므로 그 전에 안내를 보냅니다.
+const TIME_LIMIT_MS = 45_000;
+const MAX_OUTPUT_TOKENS = 600;
 
 async function runTool(call: OpenAI.Chat.ChatCompletionMessageFunctionToolCall, signal: AbortSignal) {
   try {
@@ -35,6 +36,7 @@ export async function runAgent(history: ChatMessage[], userMessage: string): Pro
         model: models.default,
         // gpt-6-luna는 Chat Completions에서 도구를 쓸 때 추론을 끄도록 요구합니다.
         reasoning_effort: 'none',
+        max_completion_tokens: MAX_OUTPUT_TOKENS,
         messages,
         tools: tools.map(({ name, description, parameters }) => ({
           type: 'function',

@@ -1,32 +1,29 @@
 import { describe, expect, it } from 'vitest';
 
-import { splitText, textResponse } from '../src/kakao/skill.js';
+import { fitText, textResponse } from '../src/kakao/skill.js';
 
-describe('splitText', () => {
+describe('fitText', () => {
   it('짧은 글은 그대로 둔다', () => {
-    expect(splitText('  안녕  ')).toEqual(['안녕']);
+    expect(fitText('  안녕  ')).toBe('안녕');
   });
 
-  it('줄바꿈 위치에서 1000자 이내로 나눈다', () => {
-    const chunks = splitText(`${'가'.repeat(900)}\n${'나'.repeat(900)}`);
+  it('긴 글은 문장 끝에서 450자 이내로 자른다', () => {
+    const text = fitText(`${'가'.repeat(300)}입니다. ${'나'.repeat(400)}입니다.`);
 
-    expect(chunks).toEqual(['가'.repeat(900), '나'.repeat(900)]);
+    expect(text).toBe(`${'가'.repeat(300)}입니다.`);
   });
 
-  it('말풍선 3개를 넘으면 잘라서 표시한다', () => {
-    const chunks = splitText('가'.repeat(5000));
-
-    expect(chunks).toHaveLength(3);
-    expect(chunks.every((chunk) => chunk.length <= 1000)).toBe(true);
-    expect(chunks[2]!.endsWith('…')).toBe(true);
+  it('문장 끝이 없어도 450자를 넘지 않는다', () => {
+    expect(fitText('가'.repeat(5000))).toHaveLength(450);
   });
 });
 
 describe('textResponse', () => {
-  it('SkillResponse 2.0 형식을 만든다', () => {
-    expect(textResponse('안녕')).toEqual({
-      version: '2.0',
-      template: { outputs: [{ simpleText: { text: '안녕' } }] },
-    });
+  it('긴 답변도 SimpleText 말풍선 1개로 만든다', () => {
+    const { version, template } = textResponse('가'.repeat(5000));
+
+    expect(version).toBe('2.0');
+    expect(template.outputs).toHaveLength(1);
+    expect(Object.keys(template.outputs[0]!)).toEqual(['simpleText']);
   });
 });
